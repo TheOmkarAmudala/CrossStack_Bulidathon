@@ -63,9 +63,8 @@ NanoPanda is designed with **scalable and ethical monetization paths**, suitable
 Watch the complete working demo of NanoPanda here:  
 👉 **YouTube Demo:**  
 
-[Watch Demo Video]([https://www.youtube.com/watch?v=YOUR_VIDEO_ID](https://youtube.com/shorts/03R1jHr3wMo?si=LES71H2wGZDNh12K))
+[Watch Demo Video](https://youtube.com/shorts/03R1jHr3wMo?si=LES71H2wGZDNh12K)
 
-[demo]([https://www.youtube.com/shorts/03R1jHr3wMo])
 
 
 <img width="391" height="552" alt="image" src="https://github.com/user-attachments/assets/111f6868-cda5-47f9-b2d0-7ebe5ea67e8a" />

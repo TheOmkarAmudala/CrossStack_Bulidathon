@@ -1,6 +1,5 @@
-![WhatsApp Image 2025-12-31 at 8 52 49 PM]()
+![WhatsApp Image 2025-12-31 at 8 52 49 PM](https://github.com/user-attachments/assets/c79ac7ea-6d30-46b3-9d0e-090e824eb9a3)
 
-<img width="391" height="552" alt="image" src="[https://github.com/user-attachments/assets/111f6868-cda5-47f9-b2d0-7ebe5ea67e8a](https://github.com/user-attachments/assets/b2a90045-7814-4c7e-a578-c2b27ed62fe5)" />
 
 
 NanoPanda introduces a **new category of mobile security** — one that operates *after trust is granted*, not just before access is allowed. While traditional systems stop at unlocking the device, NanoPanda continues to protect users throughout real-world usage scenarios.

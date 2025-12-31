@@ -1,5 +1,59 @@
 ![WhatsApp Image 2025-12-31 at 8 52 49 PM](https://github.com/user-attachments/assets/c79ac7ea-6d30-46b3-9d0e-090e824eb9a3)
 
+## ⚙️ Backend Initialization (Express.js)
+
+The backend is built using **Node.js + Express.js**, following a modular and scalable architecture.
+
+---
+
+### 🔧 Prerequisites
+
+Ensure the following are installed on your system:
+
+- Node.js (v18+ recommended)
+- npm (comes with Node.js)
+- MongoDB (Local or MongoDB Atlas)
+
+Check versions:
+```bash```
+node -v
+npm -v
+
+git clone https://github.com/TheOmkarAmudala/CrossStack_Bulidathon.git
+cd CrossStack_Bulidathon
+npm install
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+├── controller/     # Business logic
+├── models/         # Database schemas
+├── routes/         # API routes
+├── uploads/        # Media & file storage
+├── node_modules/
+├── .env
+├── errors.log
+├── package.json
+├── package-lock.json
+├── server.js       # Application entry point
+npm run dev
+npm start
+Server running on port 5000
+Database connected successfully
+npm start
+http://localhost:3000
+React.js (Frontend)
+        ↓ API Requests
+Express.js (Backend)
+        ↓
+MongoDB Database
+
+
+
+### frontend
+
+cd frontend
+npm install
+REACT_APP_API_BASE_URL=http://localhost:5000
 
 
 NanoPanda introduces a **new category of mobile security** — one that operates *after trust is granted*, not just before access is allowed. While traditional systems stop at unlocking the device, NanoPanda continues to protect users throughout real-world usage scenarios.

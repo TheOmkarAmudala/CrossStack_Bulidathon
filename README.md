@@ -20,39 +20,74 @@ node -v
 npm -v
 
 git clone https://github.com/TheOmkarAmudala/CrossStack_Bulidathon.git
+
 cd CrossStack_Bulidathon
+
 npm install
+
 PORT=5000
+
 MONGO_URI=your_mongodb_connection_string
+
 JWT_SECRET=your_secret_key
+
 ├── controller/     # Business logic
+
 ├── models/         # Database schemas
+
 ├── routes/         # API routes
+
 ├── uploads/        # Media & file storage
+
 ├── node_modules/
+
 ├── .env
+
 ├── errors.log
+
 ├── package.json
+
 ├── package-lock.json
+
 ├── server.js       # Application entry point
+
 npm run dev
+
 npm start
+
 Server running on port 5000
+
 Database connected successfully
+
 npm start
+
 http://localhost:3000
+
 React.js (Frontend)
+
         ↓ API Requests
-Express.js (Backend)
+Express.
+js (Backend)
+
+
+
         ↓
-MongoDB Database
+MongoDB 
+Database
+
+
+
 
 
 
 ### frontend
 
 cd frontend.
+
+
 npm install.
+
+
 REACT_APP_API_BASE_URL=http://localhost:5000.
 
 

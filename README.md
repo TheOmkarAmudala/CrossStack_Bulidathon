@@ -72,10 +72,18 @@ Watch the complete working demo of NanoPanda here:
 ### 📸 Application Screenshots
 Screenshots below highlight the calm, trust-first user experience:
 
-![Regiter the face](<img width="540" height="1204" alt="image" src="https://github.com/user-attachments/assets/999af999-544c-4318-8dfb-fd3ebb0ec93d" />)
-![Home Page](<img width="540" height="1204" alt="image" src="https://github.com/user-attachments/assets/b1c9cc52-5165-411f-9d34-b5b56f0f9cac" />)
-![Scanning the applications](<img width="540" height="1204" alt="image" src="https://github.com/user-attachments/assets/d5a83dc4-72ee-443a-baa7-c3896b6b574b" />)
-![Selecting the Most Security Needed Applications](<img width="540" height="1204" alt="image" src="https://github.com/user-attachments/assets/c4039815-6dc4-452a-9b4e-e1f9306dc565" />)
+<h2>Register the Face</h2>
+<img src="https://github.com/user-attachments/assets/999af999-544c-4318-8dfb-fd3ebb0ec93d" width="300"/>
+
+<h2>Home Page</h2>
+<img src="https://github.com/user-attachments/assets/b1c9cc52-5165-411f-9d34-b5b56f0f9cac" width="300"/>
+
+<h2>Scanning Applications</h2>
+<img src="https://github.com/user-attachments/assets/d5a83dc4-72ee-443a-baa7-c3896b6b574b" width="300"/>
+
+<h2>Selecting High-Security Applications</h2>
+<img src="https://github.com/user-attachments/assets/c4039815-6dc4-452a-9b4e-e1f9306dc565" width="300"/>
+
 
 The Analyzed Peak Intelligent report is Ready 
 

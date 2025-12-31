@@ -51,9 +51,9 @@ MongoDB Database
 
 ### frontend
 
-cd frontend
-npm install
-REACT_APP_API_BASE_URL=http://localhost:5000
+cd frontend.
+npm install.
+REACT_APP_API_BASE_URL=http://localhost:5000.
 
 
 NanoPanda introduces a **new category of mobile security** — one that operates *after trust is granted*, not just before access is allowed. While traditional systems stop at unlocking the device, NanoPanda continues to protect users throughout real-world usage scenarios.

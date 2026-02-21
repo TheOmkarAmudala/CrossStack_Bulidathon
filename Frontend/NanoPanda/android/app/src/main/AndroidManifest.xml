@@ -50,4 +50,6 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
     <!--  permission_handler — foreground service for monitoring -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <!-- Permission to query all installed packages -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 </manifest>

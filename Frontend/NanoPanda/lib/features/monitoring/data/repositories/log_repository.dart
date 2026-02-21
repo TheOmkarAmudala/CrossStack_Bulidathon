@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import '../../../../core/models/log_entry_model.dart';
@@ -31,14 +32,25 @@ class LogRepository {
     await _storageService.clearLogs();
   }
 
-  /// Send logs to backend (MOCKED)
+  /// Send logs to backend (POST)
   Future<bool> sendLogsToBackend(LogUploadPayload payload) async {
+    // Log the payload being sent
+    print('Sending logs to backend: ' + jsonEncode(payload));
     // Simulate API call
     await Future.delayed(AppConstants.apiSimulationDelay);
 
     // Simulate 90% success rate
     final random = math.Random();
     return random.nextDouble() > 0.1;
+  }
+
+  /// Fetch logs from backend (GET)
+  Future<List<LogEntryModel>> fetchLogsFromBackend() async {
+    // Simulate API GET call
+    await Future.delayed(AppConstants.apiSimulationDelay);
+
+    // Return mock logs for now
+    return await generateMockLogs();
   }
 
   /// Generate mock logs for demo
@@ -64,21 +76,22 @@ class LogRepository {
 
     for (int i = 0; i < 10; i++) {
       final appIndex = random.nextInt(apps.length);
-      final entryTime = now.subtract(Duration(
-        hours: random.nextInt(24),
-        minutes: random.nextInt(60),
-      ));
+      final entryTime = now.subtract(
+        Duration(hours: random.nextInt(24), minutes: random.nextInt(60)),
+      );
       final duration = Duration(minutes: random.nextInt(30) + 5);
 
-      logs.add(LogEntryModel(
-        id: 'log_${DateTime.now().millisecondsSinceEpoch}_$i',
-        appName: apps[appIndex],
-        appPackageName: packages[appIndex],
-        entryTime: entryTime,
-        exitTime: entryTime.add(duration),
-        detectionReason: reasons[random.nextInt(reasons.length)],
-        isUnwantedPerson: true,
-      ));
+      logs.add(
+        LogEntryModel(
+          id: 'log_${DateTime.now().millisecondsSinceEpoch}_$i',
+          appName: apps[appIndex],
+          appPackageName: packages[appIndex],
+          entryTime: entryTime,
+          exitTime: entryTime.add(duration),
+          detectionReason: reasons[random.nextInt(reasons.length)],
+          isUnwantedPerson: true,
+        ),
+      );
     }
 
     // Sort by entry time (newest first)

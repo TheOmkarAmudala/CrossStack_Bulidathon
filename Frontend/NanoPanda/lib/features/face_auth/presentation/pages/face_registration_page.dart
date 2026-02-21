@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../theme/theme.dart';
 import '../../../../core/services/storage_service.dart';
@@ -34,6 +35,8 @@ class _FaceRegistrationPageState extends State<FaceRegistrationPage>
   bool _faceDetected = false;
   String _statusMessage = 'Initializing camera...';
   double _progress = 0.0;
+  String? _webCameraError;
+  String? _webCameraErrorDetails;
 
   @override
   void initState() {
@@ -55,6 +58,8 @@ class _FaceRegistrationPageState extends State<FaceRegistrationPage>
       setState(() {
         _isCameraReady = false;
         _statusMessage = 'Initializing camera...';
+        _webCameraError = null;
+        _webCameraErrorDetails = null;
       });
 
       await _cameraService.initialize();
@@ -73,11 +78,27 @@ class _FaceRegistrationPageState extends State<FaceRegistrationPage>
     } catch (e) {
       debugPrint('Camera init error: $e');
       if (!mounted) return;
+      String? webError;
+      if (kIsWeb) {
+        if (e.toString().contains('NotAllowedError')) {
+          webError =
+              'Camera permission denied. Please allow camera access in your browser.';
+        } else if (e.toString().contains('NotFoundError')) {
+          webError = 'No camera found. Please connect a camera and try again.';
+        } else if (e.toString().contains('NotReadableError')) {
+          webError = 'Camera is already in use by another application or tab.';
+        } else {
+          webError =
+              'Camera initialization failed on web. Check permissions and HTTPS.';
+        }
+      }
       setState(() {
         _isCameraReady = false;
         _statusMessage = 'Camera failed to initialize';
+        _webCameraError = webError;
+        _webCameraErrorDetails = e.toString();
       });
-      _showErrorSnackBar('Unable to access camera');
+      _showErrorSnackBar(_webCameraError ?? 'Unable to access camera');
     }
   }
 
@@ -167,16 +188,12 @@ class _FaceRegistrationPageState extends State<FaceRegistrationPage>
     final size = MediaQuery.sizeOf(context);
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
         child: SafeArea(
           child: Column(
             children: [
               _buildHeader(),
-              Expanded(
-                child: _buildCameraSection(size),
-              ),
+              Expanded(child: _buildCameraSection(size)),
               _buildBottomSection(),
             ],
           ),
@@ -288,27 +305,81 @@ class _FaceRegistrationPageState extends State<FaceRegistrationPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: 50,
-              height: 50,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation(
-                  AppTheme.primaryPurple,
-                ),
-              ),
-            )
+                  width: 50,
+                  height: 50,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation(AppTheme.primaryPurple),
+                  ),
+                )
                 .animate(onPlay: (c) => c.repeat())
                 .fadeIn(duration: 300.ms)
                 .then()
                 .shimmer(duration: 1000.ms),
             const SizedBox(height: 16),
             Text(
-              'Initializing camera...',
+              _statusMessage,
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: AppTheme.textSecondary,
               ),
             ).animate().fadeIn(delay: 200.ms),
+            if (_webCameraError != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      _webCameraError!,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.redAccent,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (_webCameraErrorDetails != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _webCameraErrorDetails!,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.red.shade200,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (kIsWeb)
+                Text(
+                  'Tips: Allow camera permissions in your browser. Use HTTPS or localhost. Close other apps/tabs using the camera.',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppTheme.textMuted,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _initializeCamera,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry Camera'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryPurple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -339,9 +410,7 @@ class _FaceRegistrationPageState extends State<FaceRegistrationPage>
                     value: _progress,
                     strokeWidth: 6,
                     backgroundColor: AppTheme.surfaceDark,
-                    valueColor: AlwaysStoppedAnimation(
-                      AppTheme.primaryPurple,
-                    ),
+                    valueColor: AlwaysStoppedAnimation(AppTheme.primaryPurple),
                   ),
                 ),
                 Text(
@@ -389,11 +458,12 @@ class _FaceRegistrationPageState extends State<FaceRegistrationPage>
                       ? Icons.check_circle
                       : Icons.info_outline,
                   size: 18,
-                  color: _isProcessing
-                      ? AppTheme.info
-                      : _faceDetected
-                      ? AppTheme.success
-                      : AppTheme.warning,
+                  color:
+                      _isProcessing
+                          ? AppTheme.info
+                          : _faceDetected
+                          ? AppTheme.success
+                          : AppTheme.warning,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -408,77 +478,80 @@ class _FaceRegistrationPageState extends State<FaceRegistrationPage>
           ).animate().fadeIn(delay: 300.ms),
           const SizedBox(height: AppTheme.spacingL),
           GestureDetector(
-            onTap: _isCameraReady && _faceDetected && !_isProcessing
-                ? _captureAndRegister
-                : null,
+            onTap:
+                _isCameraReady && _faceDetected && !_isProcessing
+                    ? _captureAndRegister
+                    : null,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: double.infinity,
               height: 56,
               decoration: BoxDecoration(
-                gradient: _isCameraReady && _faceDetected && !_isProcessing
-                    ? AppTheme.primaryGradient
-                    : null,
-                color: _isCameraReady && _faceDetected && !_isProcessing
-                    ? null
-                    : AppTheme.surfaceDark,
+                gradient:
+                    _isCameraReady && _faceDetected && !_isProcessing
+                        ? AppTheme.primaryGradient
+                        : null,
+                color:
+                    _isCameraReady && _faceDetected && !_isProcessing
+                        ? null
+                        : AppTheme.surfaceDark,
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                 boxShadow:
-                _isCameraReady && _faceDetected && !_isProcessing
-                    ? AppTheme.glowShadow(
-                  AppTheme.primaryPurple,
-                  intensity: 0.3,
-                )
-                    : null,
+                    _isCameraReady && _faceDetected && !_isProcessing
+                        ? AppTheme.glowShadow(
+                          AppTheme.primaryPurple,
+                          intensity: 0.3,
+                        )
+                        : null,
               ),
               child: Center(
-                child: _isCapturing
-                    ? SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation(
-                      AppTheme.textPrimary,
-                    ),
-                  ),
-                )
-                    : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.camera_alt,
-                      color: _isCameraReady &&
-                          _faceDetected &&
-                          !_isProcessing
-                          ? AppTheme.textPrimary
-                          : AppTheme.textMuted,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Register Face',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: _isCameraReady &&
-                            _faceDetected &&
-                            !_isProcessing
-                            ? AppTheme.textPrimary
-                            : AppTheme.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
+                child:
+                    _isCapturing
+                        ? SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(
+                              AppTheme.textPrimary,
+                            ),
+                          ),
+                        )
+                        : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.camera_alt,
+                              color:
+                                  _isCameraReady &&
+                                          _faceDetected &&
+                                          !_isProcessing
+                                      ? AppTheme.textPrimary
+                                      : AppTheme.textMuted,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Register Face',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    _isCameraReady &&
+                                            _faceDetected &&
+                                            !_isProcessing
+                                        ? AppTheme.textPrimary
+                                        : AppTheme.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
               ),
             ),
           ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
           const SizedBox(height: AppTheme.spacingM),
           Text(
             'Your face data is encrypted and stored securely',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: AppTheme.textMuted,
-            ),
+            style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
             textAlign: TextAlign.center,
           ).animate().fadeIn(delay: 500.ms),
         ],

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:io';
 
 import '../../../../theme/theme.dart';
 import '../../../../core/models/app_info_model.dart';
@@ -10,6 +11,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/providers/app_state_provider.dart';
 import '../../../../core/utils/constants.dart';
 import '../../data/repositories/app_monitor_repository.dart';
+import '../../../../core/services/activity_logger.dart';
 
 class AppSelectionPage extends StatefulWidget {
   const AppSelectionPage({super.key});
@@ -29,36 +31,51 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
   @override
   void initState() {
     super.initState();
-    _loadApps();
+    _loadMockApps();
+    ActivityLogger().log('AppSelectionPage opened');
   }
 
-  Future<void> _loadApps() async {
+  Future<void> _loadMockApps() async {
     setState(() => _isLoading = true);
-
-    try {
-      final apps = await _repository.getInstalledApps();
-      final storageService = context.read<StorageService>();
-      final savedApps = await storageService.getSelectedApps();
-      final appState = context.read<AppStateProvider>();
-
-      // Mark previously selected apps
-      final updatedApps = apps.map((app) {
-        final isSelected = savedApps.any((s) => s.packageName == app.packageName);
-        return app.copyWith(isSelected: isSelected);
-      }).toList();
-
-      if (mounted) {
-        setState(() {
-          _apps = updatedApps;
-          _isLoading = false;
-          _isMonitoring = appState.isMonitoringEnabled;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showErrorSnackBar('Failed to load apps');
-      }
+    await Future.delayed(const Duration(milliseconds: 500)); // Simulate loading
+    final mockApps = [
+      AppInfoModel(
+        name: 'Instagram',
+        packageName: 'com.instagram.android',
+        icon: null,
+        isSelected: false,
+      ),
+      AppInfoModel(
+        name: 'Facebook',
+        packageName: 'com.facebook.katana',
+        icon: null,
+        isSelected: false,
+      ),
+      AppInfoModel(
+        name: 'WhatsApp',
+        packageName: 'com.whatsapp',
+        icon: null,
+        isSelected: false,
+      ),
+      AppInfoModel(
+        name: 'YouTube',
+        packageName: 'com.google.android.youtube',
+        icon: null,
+        isSelected: false,
+      ),
+      AppInfoModel(
+        name: 'Twitter',
+        packageName: 'com.twitter.android',
+        icon: null,
+        isSelected: false,
+      ),
+    ];
+    if (mounted) {
+      setState(() {
+        _apps = mockApps;
+        _isLoading = false;
+        _isMonitoring = false;
+      });
     }
   }
 
@@ -71,7 +88,9 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
     final currentCount = _selectedCount;
 
     if (!app.isSelected && currentCount >= AppConstants.maxAppsToMonitor) {
-      _showErrorSnackBar('Maximum ${AppConstants.maxAppsToMonitor} apps can be selected');
+      _showErrorSnackBar(
+        'Maximum ${AppConstants.maxAppsToMonitor} apps can be selected',
+      );
       return;
     }
 
@@ -79,6 +98,10 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
     setState(() {
       _apps[index] = app.copyWith(isSelected: !app.isSelected);
     });
+    ActivityLogger().log(
+      'App selection toggled',
+      details: {'app': app.name, 'selected': !app.isSelected},
+    );
   }
 
   Future<void> _startMonitoring() async {
@@ -106,6 +129,10 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
           _isMonitoring = true;
           _isStartingMonitoring = false;
         });
+        ActivityLogger().log(
+          'Monitoring started',
+          details: {'apps': selectedApps.map((a) => a.name).toList()},
+        );
         _showSuccessSnackBar('Monitoring started for $_selectedCount apps');
       }
     } catch (e) {
@@ -125,10 +152,45 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
 
       if (mounted) {
         setState(() => _isMonitoring = false);
-        _showSuccessSnackBar('Monitoring stopped');
+        ActivityLogger().log('Monitoring stopped');
+
+        // POST suspicious activity log
+        final userId = 'user_84291'; // Replace with actual user id
+        final deviceId = 'device_pixel7_01'; // Replace with actual device id
+        final actions =
+            ActivityLogger().logs.map((log) {
+              String resource = log['details']?['resource'];
+              if (resource == null || resource.isEmpty) {
+                resource = log['details']?['app'] ?? 'unknown';
+              }
+              return {
+                'name': log['action'],
+                'resource': resource,
+                'duration_seconds': log['details']?['duration_seconds'] ?? 0,
+                'result': log['details']?['result'] ?? 'allowed',
+              };
+            }).toList();
+        final location = null;
+        final sessionName = null;
+        _showSuccessSnackBar('Posting activity log...');
+        final success = await _repository.postSuspiciousActivity(
+          userId: userId,
+          deviceId: deviceId,
+          actions: actions,
+          location: location,
+          sessionName: sessionName,
+        );
+        if (success) {
+          _showSuccessSnackBar('Activity log posted');
+        } else {
+          _showErrorSnackBar('Failed to post activity log');
+        }
       }
     } catch (e) {
-      _showErrorSnackBar('Failed to stop monitoring');
+      if (mounted) {
+        setState(() => _isMonitoring = false);
+        _showErrorSnackBar('Failed to stop monitoring');
+      }
     }
   }
 
@@ -168,18 +230,14 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
         child: SafeArea(
           child: Column(
             children: [
               _buildHeader(),
               _buildStatusBar(),
               Expanded(
-                child: _isLoading
-                    ? _buildLoadingState()
-                    : _buildAppsList(),
+                child: _isLoading ? _buildLoadingState() : _buildAppsList(),
               ),
               _buildBottomControls(),
             ],
@@ -239,9 +297,7 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
       padding: const EdgeInsets.all(AppTheme.spacingM),
       decoration: AppTheme.glassDecoration(
         opacity: _isMonitoring ? 0.15 : 0.05,
-        borderColor: _isMonitoring
-            ? AppTheme.success.withOpacity(0.3)
-            : null,
+        borderColor: _isMonitoring ? AppTheme.success.withOpacity(0.3) : null,
       ),
       child: Row(
         children: [
@@ -268,7 +324,8 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: _isMonitoring ? AppTheme.success : AppTheme.textPrimary,
+                    color:
+                        _isMonitoring ? AppTheme.success : AppTheme.textPrimary,
                   ),
                 ),
                 Text(
@@ -283,20 +340,21 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
           ),
           if (_isMonitoring)
             Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: AppTheme.success,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.success.withOpacity(0.5),
-                    blurRadius: 8,
-                    spreadRadius: 2,
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: AppTheme.success,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.success.withOpacity(0.5),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ).animate(onPlay: (c) => c.repeat(reverse: true))
+                )
+                .animate(onPlay: (c) => c.repeat(reverse: true))
                 .fadeIn(duration: 800.ms)
                 .fadeOut(duration: 800.ms),
         ],
@@ -323,6 +381,23 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
   }
 
   Widget _buildAppsList() {
+    if (_apps.isEmpty && !_isLoading) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'No installed apps found.',
+              style: GoogleFonts.inter(
+                color: AppTheme.textSecondary,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      );
+    }
     return ListView.builder(
       padding: const EdgeInsets.all(AppTheme.spacingM),
       itemCount: _apps.length,
@@ -346,43 +421,55 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
         margin: const EdgeInsets.only(bottom: AppTheme.spacingS),
         padding: const EdgeInsets.all(AppTheme.spacingM),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primaryPurple.withOpacity(0.15)
-              : AppTheme.surfaceDark.withOpacity(0.5),
+          color:
+              isSelected
+                  ? AppTheme.primaryPurple.withOpacity(0.15)
+                  : AppTheme.surfaceDark.withOpacity(0.5),
           borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
           border: Border.all(
-            color: isSelected
-                ? AppTheme.primaryPurple.withOpacity(0.5)
-                : Colors.transparent,
+            color:
+                isSelected
+                    ? AppTheme.primaryPurple.withOpacity(0.5)
+                    : Colors.transparent,
             width: 1.5,
           ),
         ),
         child: Row(
           children: [
-            // App icon placeholder
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    _getAppColor(app.name),
-                    _getAppColor(app.name).withOpacity(0.7),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  app.name.substring(0, 1).toUpperCase(),
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            // App icon or placeholder
+            app.icon != null
+                ? ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(
+                    app.icon!,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                  ),
+                )
+                : Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        _getAppColor(app.name),
+                        _getAppColor(app.name).withOpacity(0.7),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      app.name.substring(0, 1).toUpperCase(),
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -413,20 +500,18 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppTheme.primaryPurple
-                    : Colors.transparent,
+                color: isSelected ? AppTheme.primaryPurple : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: isSelected
-                      ? AppTheme.primaryPurple
-                      : AppTheme.textMuted,
+                  color:
+                      isSelected ? AppTheme.primaryPurple : AppTheme.textMuted,
                   width: 2,
                 ),
               ),
-              child: isSelected
-                  ? const Icon(Icons.check, color: Colors.white, size: 18)
-                  : null,
+              child:
+                  isSelected
+                      ? const Icon(Icons.check, color: Colors.white, size: 18)
+                      : null,
             ),
           ],
         ),
@@ -472,55 +557,75 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
                       duration: const Duration(milliseconds: 200),
                       height: 52,
                       decoration: BoxDecoration(
-                        gradient: _isMonitoring
-                            ? null
-                            : (_selectedCount > 0
-                            ? const LinearGradient(
-                          colors: [Color(0xFF11998E), Color(0xFF38EF7D)],
-                        )
-                            : null),
-                        color: _isMonitoring
-                            ? AppTheme.error
-                            : (_selectedCount == 0 ? AppTheme.surfaceDark : null),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                        boxShadow: _selectedCount > 0 && !_isMonitoring
-                            ? AppTheme.glowShadow(const Color(0xFF11998E), intensity: 0.3)
-                            : null,
+                        gradient:
+                            _isMonitoring
+                                ? null
+                                : (_selectedCount > 0
+                                    ? const LinearGradient(
+                                      colors: [
+                                        Color(0xFF11998E),
+                                        Color(0xFF38EF7D),
+                                      ],
+                                    )
+                                    : null),
+                        color:
+                            _isMonitoring
+                                ? AppTheme.error
+                                : (_selectedCount == 0
+                                    ? AppTheme.surfaceDark
+                                    : null),
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.radiusMedium,
+                        ),
+                        boxShadow:
+                            _selectedCount > 0 && !_isMonitoring
+                                ? AppTheme.glowShadow(
+                                  const Color(0xFF11998E),
+                                  intensity: 0.3,
+                                )
+                                : null,
                       ),
                       child: Center(
-                        child: _isStartingMonitoring
-                            ? SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                            : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _isMonitoring ? Icons.stop : Icons.play_arrow,
-                              color: _selectedCount > 0 || _isMonitoring
-                                  ? Colors.white
-                                  : AppTheme.textMuted,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _isMonitoring ? 'Stop Monitoring' : 'Start Monitoring',
-                              style: GoogleFonts.inter(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: _selectedCount > 0 || _isMonitoring
-                                    ? Colors.white
-                                    : AppTheme.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
+                        child:
+                            _isStartingMonitoring
+                                ? SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                                : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _isMonitoring
+                                          ? Icons.stop
+                                          : Icons.play_arrow,
+                                      color:
+                                          _selectedCount > 0 || _isMonitoring
+                                              ? Colors.white
+                                              : AppTheme.textMuted,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _isMonitoring
+                                          ? 'Stop Monitoring'
+                                          : 'Start Monitoring',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color:
+                                            _selectedCount > 0 || _isMonitoring
+                                                ? Colors.white
+                                                : AppTheme.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                       ),
                     ),
                   ),
